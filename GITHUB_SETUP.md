@@ -21,6 +21,8 @@ git push -u origin main
 ```
 
 ### 3. Deploy on Render.com
+
+#### **Рекомендуемый способ (с Docker):**
 1. Go to https://render.com
 2. Sign up/Login with GitHub
 3. Click **"New Web Service"**
@@ -28,27 +30,64 @@ git push -u origin main
 5. Select your `king-of-the-chat-bot` repository
 6. Configure the service:
    - **Name**: king-of-the-chat-bot (or any name)
-   - **Environment**: Node
-   - **Build Command**: `npm run build`
-   - **Start Command**: `npm start`
+   - **Environment**: Docker
+   - **Dockerfile Path**: `./Dockerfile` (будет автоматически обнаружено)
 7. Add environment variable:
    - **Key**: `BOT_TOKEN`
    - **Value**: `your_actual_bot_token_from_botfather`
 8. Click **"Create Web Service"**
 
+#### **Альтернативный способ (без Docker):**
+1. Выберите **Environment**: Node
+2. **Build Command**: `npm run build`
+3. **Start Command**: `npm start`
+4. Добавьте переменную `BOT_TOKEN`
+
 ### 4. Important: Use Polling (Not Webhooks)
 Render.com is better with polling for Telegram bots. The bot is already configured for polling, so no additional setup needed!
 
-### 5. Troubleshooting Render.com Deployment
+### 5. Local Testing (Recommended)
 
-If you see errors like "Cannot find module '/opt/render/project/src/dist/bot.js'":
+Before deploying, test locally:
 
+```bash
+# Clone repository
+git clone https://github.com/YOUR_USERNAME/king-of-the-chat-bot.git
+cd king-of-the-chat-bot
+
+# Install dependencies
+npm install
+
+# Test build process
+./test-local.sh
+
+# Create .env file with your bot token
+cp .env.example .env
+# Edit .env and add your BOT_TOKEN
+
+# Run locally
+npm start
+```
+
+### 6. Troubleshooting Render.com Deployment
+
+#### **"Cannot find module '/opt/render/project/src/dist/bot.js'"**
 1. **Check Build Logs**: Go to your Render service → Logs tab
-2. **Verify Compilation**: Make sure `npm run build` completes successfully
-3. **Check File Structure**: The `dist/bot.js` file should exist after build
-4. **Redeploy**: Sometimes a manual redeploy fixes the issue
+2. **Use Docker**: Switch to Docker environment for better reliability
+3. **Manual Redeploy**: Try "Clear build cache and deploy"
+4. **Verify Files**: Make sure all files are committed to Git
 
-### 6. Bot Permissions Setup
+#### **Build Errors**
+1. **Node Version**: Ensure Node.js 18+ in your Render service
+2. **Dependencies**: Check that all dependencies install correctly
+3. **TypeScript**: Verify that `tsc` compiles without errors
+
+#### **Runtime Errors**
+1. **BOT_TOKEN**: Verify the token is correctly set in environment variables
+2. **Logs**: Check Render logs for detailed error messages
+3. **Health Check**: Use `/health` command in Telegram to check bot status
+
+### 7. Bot Permissions Setup
 Make sure your bot has these permissions in your Telegram chat:
 - ✅ Pin messages
 - ✅ Delete messages

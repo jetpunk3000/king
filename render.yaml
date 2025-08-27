@@ -1,16 +1,13 @@
 services:
   - type: web
     name: king-of-the-chat-bot
-    env: node
-    buildCommand: npm run build
-    startCommand: npm start
+    env: docker
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: BOT_TOKEN
         sync: false # You need to set this manually
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000 # Render assigns random port, but we can set default
     healthCheckPath: /
     plan: free # or starter, etc.
     autoDeploy: false # Disable auto-deploy for manual control
