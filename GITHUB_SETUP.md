@@ -39,7 +39,16 @@ git push -u origin main
 ### 4. Important: Use Polling (Not Webhooks)
 Render.com is better with polling for Telegram bots. The bot is already configured for polling, so no additional setup needed!
 
-### 5. Bot Permissions Setup
+### 5. Troubleshooting Render.com Deployment
+
+If you see errors like "Cannot find module '/opt/render/project/src/dist/bot.js'":
+
+1. **Check Build Logs**: Go to your Render service → Logs tab
+2. **Verify Compilation**: Make sure `npm run build` completes successfully
+3. **Check File Structure**: The `dist/bot.js` file should exist after build
+4. **Redeploy**: Sometimes a manual redeploy fixes the issue
+
+### 6. Bot Permissions Setup
 Make sure your bot has these permissions in your Telegram chat:
 - ✅ Pin messages
 - ✅ Delete messages
