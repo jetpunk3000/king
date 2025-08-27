@@ -1,0 +1,234 @@
+import { Telegraf, Context } from 'telegraf';
+import { message } from 'telegraf/filters';
+import { DatabaseManager } from './database/database';
+import { KingCommandHandler } from './handlers/kingCommand';
+import { CallbackHandler } from './handlers/callbackHandler';
+import { AdminCommandHandler } from './handlers/adminCommands';
+import { PermissionUtils, ImageUtils } from './utils';
+
+// Load environment variables
+require('dotenv').config();
+
+if (!process.env.BOT_TOKEN) {
+  console.error('❌ BOT_TOKEN environment variable is required!');
+  console.error('Please create a .env file with:');
+  console.error('BOT_TOKEN=your_telegram_bot_token_here');
+  process.exit(1);
+}
+
+// Check if token is a placeholder
+if (process.env.BOT_TOKEN === 'your_telegram_bot_token_here' || !/^\d+:[A-Za-z0-9_-]+$/.test(process.env.BOT_TOKEN)) {
+  console.error('❌ INVALID BOT TOKEN!');
+  console.error('');
+  console.error('📝 Your BOT_TOKEN in .env file is not set correctly.');
+  console.error('📝 It should be something like: 1234567890:ABCdefGHIjklMNOpqrsTUVwxyz123456789');
+  console.error('');
+  console.error('🔧 To fix this:');
+  console.error('1. Go to Telegram and search for @BotFather');
+  console.error('2. Use /newbot command to create a bot');
+  console.error('3. Copy the token and replace "your_telegram_bot_token_here" in .env file');
+  console.error('');
+  process.exit(1);
+}
+
+// Initialize bot and database
+const bot = new Telegraf(process.env.BOT_TOKEN);
+const db = new DatabaseManager('./data.json');
+
+// Initialize handlers
+const kingCommandHandler = new KingCommandHandler(db);
+const callbackHandler = new CallbackHandler(db);
+const adminCommandHandler = new AdminCommandHandler(db);
+
+/**
+ * Error handling middleware
+ */
+bot.use(async (ctx: Context, next) => {
+  try {
+    await next();
+  } catch (error) {
+    console.error('Unhandled error:', error);
+    try {
+      await ctx.reply('❌ An unexpected error occurred. Please try again.');
+    } catch (replyError) {
+      console.error('Error sending error message:', replyError);
+    }
+  }
+});
+
+/**
+ * Start command - show welcome message
+ */
+bot.start(async (ctx) => {
+  const welcomeMessage = `👑 \\*KING OF THE CHAT\\*
+
+Welcome to the ultimate throne battle\\!
+
+Use \`/king <amount>\` to claim the throne and start your reign\\!
+
+\\*Example:\\* \`/king 100\`
+
+Good luck\\! 🍀`;
+
+  await ctx.reply(welcomeMessage, { parse_mode: 'MarkdownV2' });
+});
+
+/**
+ * Help command
+ */
+bot.help(async (ctx) => {
+  const helpMessage = `👑 \\*KING OF THE CHAT\\* \\- Help
+
+\\*Game Commands:\\*
+\`/start\` \\- Show welcome message
+\`/help\` \\- Show this help
+\`/king <amount>\` \\- Claim throne with bet amount
+
+\\*Admin Commands \\(for testing\\):\\*
+\`/kingreset\` \\- Reset current king \\(admins only\\)
+/kingresetforce \\- Force reset without admin check \\(emergency\\)
+/kingstats \\- Show chat statistics
+
+\\*Game Rules:\\*
+1\\. BET \`/king 100\` \\(any amount\\) to claim throne
+2\\. DUMP to attack the King \\- 50/50 odds
+3\\. Winner doubles up
+4\\. CASHOUT anytime
+5\\. STREAK BONUS: \\+5% winrate per defense up to 70/30
+
+\\*Permissions Required:\\*
+✅ Pin messages
+✅ Delete messages
+
+Make sure the bot is an admin with these permissions\\!`;
+
+  await ctx.reply(helpMessage, { parse_mode: 'MarkdownV2' });
+});
+
+/**
+ * King command handler
+ */
+bot.command('king', async (ctx) => {
+  await kingCommandHandler.handle(ctx);
+});
+
+/**
+ * Admin commands (for testing/debugging)
+ */
+bot.command('kingreset', async (ctx) => {
+  console.log(`🚀 King reset command triggered by user ${ctx.from?.id} (@${ctx.from?.username || ctx.from?.first_name || 'Unknown'})`);
+  await adminCommandHandler.handleKingReset(ctx);
+});
+
+bot.command('kingstats', async (ctx) => {
+  console.log(`🚀 King stats command triggered by user ${ctx.from?.id} (@${ctx.from?.username || ctx.from?.first_name || 'Unknown'})`);
+  await adminCommandHandler.handleKingStats(ctx);
+});
+
+bot.command('kingresetforce', async (ctx) => {
+  console.log(`🚨 FORCE King reset command triggered by user ${ctx.from?.id} (@${ctx.from?.username || ctx.from?.first_name || 'Unknown'})`);
+  await adminCommandHandler.handleKingResetForce(ctx);
+});
+
+/**
+ * Handle callback queries (inline buttons)
+ */
+bot.on('callback_query', async (ctx) => {
+  await callbackHandler.handle(ctx);
+});
+
+/**
+ * Handle text messages (for debugging or future features)
+ */
+bot.on(message('text'), async (ctx) => {
+  // Could add more features here in the future
+  // For now, just ignore regular text messages
+});
+
+/**
+ * Handle new chat members (welcome message)
+ */
+bot.on('new_chat_members', async (ctx) => {
+  const newMembers = ctx.message.new_chat_members;
+  const botUsername = ctx.botInfo.username;
+
+  for (const member of newMembers) {
+    if (member.username === botUsername) {
+      // Bot was added to chat
+      const welcomeMessage = `👑 \\*KING OF THE CHAT\\*
+
+I've been added to this chat\\!
+
+To get started:
+1\\. Make me an admin with these permissions:
+   ✅ Pin messages
+   ✅ Delete messages
+2\\. Use \`/king <amount>\` to start the game\\!
+
+Example: \`/king 100\``;
+
+      await ctx.reply(welcomeMessage, { parse_mode: 'MarkdownV2' });
+    }
+  }
+});
+
+/**
+ * Graceful shutdown
+ */
+process.once('SIGINT', () => {
+  console.log('Received SIGINT, shutting down gracefully...');
+  bot.stop('SIGINT');
+});
+
+process.once('SIGTERM', () => {
+  console.log('Received SIGTERM, shutting down gracefully...');
+  bot.stop('SIGTERM');
+});
+
+/**
+ * Start the bot
+ */
+async function startBot(): Promise<void> {
+  try {
+    console.log('🚀 Starting KING OF THE CHAT bot...');
+
+    // Ensure image directory exists
+    ImageUtils.ensureImageDirectory();
+
+    // Check if image exists
+    if (ImageUtils.imageExists()) {
+      console.log('✅ King image found at ./assets/images/king.jpg');
+    } else {
+      console.log('⚠️  King image not found at ./assets/images/king.jpg - will use text-only messages');
+    }
+
+    // Launch bot
+    await bot.launch();
+    console.log('✅ Bot is running! Press Ctrl+C to stop.');
+    console.log('🎮 KING OF THE CHAT is ready to accept commands!');
+    console.log('📝 Use /king <amount> to start a game in any chat');
+
+    // Show database stats
+    const stats = db.getStats();
+    console.log(`📊 Database stats: ${stats.totalChats} chats, ${stats.totalUsers} users`);
+
+    // Show bot info
+    try {
+      const botInfo = await bot.telegram.getMe();
+      console.log(`🤖 Bot: @${botInfo.username} (${botInfo.first_name})`);
+      console.log(`🆔 Bot ID: ${botInfo.id}`);
+    } catch (error) {
+      console.warn('⚠️  Could not get bot info:', error);
+    }
+
+  } catch (error) {
+    console.error('❌ Failed to start bot:', error);
+    process.exit(1);
+  }
+}
+
+// Start the bot
+startBot().catch((error) => {
+  console.error('❌ Fatal error starting bot:', error);
+  process.exit(1);
+});
