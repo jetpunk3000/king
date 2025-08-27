@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: king-of-the-chat-bot
+    env: node
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: BOT_TOKEN
+        sync: false # You need to set this manually
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /
+    plan: free # or starter, etc.

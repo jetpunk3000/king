@@ -1,11 +1,11 @@
-# 🚀 KING OF THE CHAT - GitHub & Railway Setup
+# 🚀 KING OF THE CHAT - GitHub & Render Setup
 
 ## ✅ Your bot is ready! Here's what you need to do:
 
 ### 1. Create GitHub Repository
 1. Go to https://github.com/new
 2. Repository name: `king-of-the-chat-bot` (or any name you like)
-3. Make it **Public** (easier for Railway deployment)
+3. Make it **Public** (easier for deployment)
 4. **DO NOT** initialize with README (we already have one)
 5. Click "Create repository"
 
@@ -20,18 +20,26 @@ git remote add origin https://github.com/YOUR_USERNAME/king-of-the-chat-bot.git
 git push -u origin main
 ```
 
-### 3. Deploy on Railway
-1. Go to https://railway.app
+### 3. Deploy on Render.com
+1. Go to https://render.com
 2. Sign up/Login with GitHub
-3. Click "Deploy from GitHub"
-4. Select your `king-of-the-chat-bot` repository
-5. Railway will automatically detect it's a Node.js app
-6. Add your BOT_TOKEN environment variable:
-   - Go to Variables tab
-   - Add: `BOT_TOKEN` = `your_actual_bot_token_from_botfather`
-7. Click "Deploy"
+3. Click **"New Web Service"**
+4. Connect your GitHub account
+5. Select your `king-of-the-chat-bot` repository
+6. Configure the service:
+   - **Name**: king-of-the-chat-bot (or any name)
+   - **Environment**: Node
+   - **Build Command**: `npm run build`
+   - **Start Command**: `npm start`
+7. Add environment variable:
+   - **Key**: `BOT_TOKEN`
+   - **Value**: `your_actual_bot_token_from_botfather`
+8. Click **"Create Web Service"**
 
-### 4. Bot Permissions Setup
+### 4. Important: Use Polling (Not Webhooks)
+Render.com is better with polling for Telegram bots. The bot is already configured for polling, so no additional setup needed!
+
+### 5. Bot Permissions Setup
 Make sure your bot has these permissions in your Telegram chat:
 - ✅ Pin messages
 - ✅ Delete messages
