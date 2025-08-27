@@ -9,10 +9,18 @@ import { PermissionUtils, ImageUtils } from './utils';
 // Load environment variables
 require('dotenv').config();
 
+// Set default PORT for Render.com (though we use polling, not webhooks)
+process.env.PORT = process.env.PORT || '10000';
+
 if (!process.env.BOT_TOKEN) {
   console.error('❌ BOT_TOKEN environment variable is required!');
   console.error('Please create a .env file with:');
   console.error('BOT_TOKEN=your_telegram_bot_token_here');
+  console.error('');
+  console.error('For Render.com deployment:');
+  console.error('1. Go to your service dashboard');
+  console.error('2. Add environment variable BOT_TOKEN');
+  console.error('3. Redeploy the service');
   process.exit(1);
 }
 
@@ -54,6 +62,25 @@ bot.use(async (ctx: Context, next) => {
       console.error('Error sending error message:', replyError);
     }
   }
+});
+
+/**
+ * Health check endpoint for Render.com
+ */
+bot.command('health', async (ctx) => {
+  const stats = db.getStats();
+  const uptime = process.uptime();
+  const uptimeFormatted = `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m`;
+
+  const healthMessage = `🤖 *Bot Status: ONLINE*
+
+⏱️ *Uptime:* ${uptimeFormatted}
+📊 *Chats:* ${stats.totalChats}
+👥 *Users:* ${stats.totalUsers}
+💾 *Memory:* ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB
+🔗 *Platform:* Render.com`;
+
+  await ctx.reply(healthMessage, { parse_mode: 'Markdown' });
 });
 
 /**

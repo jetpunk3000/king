@@ -2,10 +2,11 @@
   "name": "king-of-the-chat-bot",
   "version": "1.0.0",
   "description": "Telegram bot game 'KING OF THE CHAT' with betting mechanics",
-  "main": "dist/bot.js",
+  "main": "./dist/bot.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/bot.js",
+    "postinstall": "npm run build",
+    "start": "node ./dist/bot.js",
     "dev": "ts-node src/bot.ts",
     "clean": "rm -rf dist",
     "setup": "./setup-bot.sh"

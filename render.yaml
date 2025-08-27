@@ -9,5 +9,8 @@ services:
         sync: false # You need to set this manually
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000 # Render assigns random port, but we can set default
     healthCheckPath: /
     plan: free # or starter, etc.
+    autoDeploy: false # Disable auto-deploy for manual control
