@@ -8,6 +8,5 @@ services:
         sync: false # You need to set this manually
       - key: NODE_ENV
         value: production
-    healthCheckPath: /
-    plan: free # or starter, etc.
+    plan: free
     autoDeploy: false # Disable auto-deploy for manual control
