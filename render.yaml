@@ -8,6 +8,16 @@ services:
         sync: false # You need to set this manually
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: "10000"
     plan: free
     autoDeploy: false # Disable auto-deploy for manual control
     healthCheckPath: /health
+    buildFilter:
+      paths:
+        - src/**
+        - package.json
+        - package-lock.json
+        - tsconfig.json
+        - Dockerfile
+        - render.yaml
