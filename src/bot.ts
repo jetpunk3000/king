@@ -5,12 +5,13 @@ import { KingCommandHandler } from './handlers/kingCommand';
 import { CallbackHandler } from './handlers/callbackHandler';
 import { AdminCommandHandler } from './handlers/adminCommands';
 import { PermissionUtils, ImageUtils } from './utils';
+import * as http from 'http';
 
 // Load environment variables
 require('dotenv').config();
 
-// Set default PORT for Render.com (though we use polling, not webhooks)
-process.env.PORT = process.env.PORT || '10000';
+// Set default PORT for Render.com
+const PORT = process.env.PORT || '10000';
 
 if (!process.env.BOT_TOKEN) {
   console.error('❌ BOT_TOKEN environment variable is required!');
@@ -213,11 +214,40 @@ process.once('SIGTERM', () => {
 });
 
 /**
+ * Start HTTP server for Render health checks
+ */
+function startHttpServer(): http.Server {
+  const server = http.createServer((req, res) => {
+    if (req.url === '/health' || req.url === '/') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        status: 'ok',
+        service: 'king-of-the-chat-bot',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+      }));
+    } else {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('Not Found');
+    }
+  });
+
+  server.listen(PORT, () => {
+    console.log(`🌐 HTTP server listening on port ${PORT}`);
+  });
+
+  return server;
+}
+
+/**
  * Start the bot
  */
 async function startBot(): Promise<void> {
   try {
     console.log('🚀 Starting KING OF THE CHAT bot...');
+
+    // Start HTTP server for Render health checks
+    const httpServer = startHttpServer();
 
     // Ensure image directory exists
     ImageUtils.ensureImageDirectory();

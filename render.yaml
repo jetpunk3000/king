@@ -10,3 +10,4 @@ services:
         value: production
     plan: free
     autoDeploy: false # Disable auto-deploy for manual control
+    healthCheckPath: /health
