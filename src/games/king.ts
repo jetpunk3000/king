@@ -1,7 +1,7 @@
 import { Context } from 'telegraf';
 import { Markup } from 'telegraf';
 import { DatabaseManager } from '../database/database';
-import { ImageUtils, PermissionUtils, MessageManager, GameLogic } from '../utils';
+import { ImageUtils, PermissionUtils, MessageManager, GameLogic, GameEconomy } from '../utils';
 import { King } from '../database/types';
 
 /**
@@ -227,8 +227,8 @@ async function handleKingDump(
       timestamp: Date.now()
     };
 
-    // Pay out winner
-    const payout = GameLogic.calculatePayout(currentKing.betAmount);
+    // Pay out winner using zero-sum economy
+    const payout = GameEconomy.calculatePayout(currentKing.betAmount);
     db.updateUserBalance(chatId, userId, payout, username, firstName);
 
     // Remove old king
@@ -251,8 +251,8 @@ async function handleKingDump(
     currentKing.streak++;
     db.setKing(chatId, currentKing);
 
-    // Pay out king
-    const payout = GameLogic.calculatePayout(currentKing.betAmount);
+    // Pay out king using zero-sum economy
+    const payout = GameEconomy.calculatePayout(currentKing.betAmount);
     db.updateUserBalance(chatId, currentKing.userId, payout);
 
     // Send status message
@@ -287,8 +287,8 @@ async function handleKingCashout(
     return;
   }
 
-  // Calculate payout (original bet + streak bonus)
-  const payout = GameLogic.calculatePayout(currentKing.betAmount);
+  // Calculate payout using zero-sum economy (original bet minus house edge)
+  const payout = GameEconomy.calculatePayout(currentKing.betAmount);
   db.updateUserBalance(chatId, userId, payout, username, firstName);
 
   // Send status message

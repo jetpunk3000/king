@@ -1,7 +1,80 @@
 import { King } from '../database/types';
 
 /**
+ * Game economy system for KING OF THE CHAT
+ * Handles payouts with configurable house edge for fair zero-sum gaming
+ */
+export class GameEconomy {
+  private static houseEdgePercent: number = 0; // Default 0% house edge (zero-sum)
+
+  /**
+   * Get current house edge percentage
+   */
+  static getHouseEdgePercent(): number {
+    return this.houseEdgePercent;
+  }
+
+  /**
+   * Set house edge percentage (admin function)
+   * @param percent - House edge as decimal (0.0 to 0.1 for 0% to 10%)
+   */
+  static setHouseEdgePercent(percent: number): boolean {
+    if (percent < 0 || percent > 0.5) { // Max 50% house edge
+      return false;
+    }
+    this.houseEdgePercent = percent;
+    console.log(`🏦 House edge updated to ${(percent * 100).toFixed(1)}%`);
+    return true;
+  }
+
+  /**
+   * Calculate payout with house edge deduction
+   * @param betAmount - The original bet amount
+   * @returns Payout amount after house edge deduction
+   */
+  static calculatePayout(betAmount: number): number {
+    const houseCut = Math.floor(betAmount * this.houseEdgePercent);
+    return betAmount - houseCut;
+  }
+
+  /**
+   * Get house cut amount for display
+   * @param betAmount - The original bet amount
+   * @returns Amount taken by house
+   */
+  static getHouseCut(betAmount: number): number {
+    return Math.floor(betAmount * this.houseEdgePercent);
+  }
+
+  /**
+   * Get economy info for admin display
+   */
+  static getEconomyInfo(): {
+    houseEdgePercent: number;
+    isZeroSum: boolean;
+    description: string;
+  } {
+    const percent = this.houseEdgePercent;
+    const isZeroSum = percent === 0;
+
+    let description = '';
+    if (isZeroSum) {
+      description = 'Zero-sum game (no house edge)';
+    } else {
+      description = `${(percent * 100).toFixed(1)}% house edge`;
+    }
+
+    return {
+      houseEdgePercent: percent,
+      isZeroSum,
+      description
+    };
+  }
+}
+
+/**
  * Game logic utilities for KING OF THE CHAT
+ * @deprecated Use GameEconomy for payout calculations
  */
 export class GameLogic {
   /**
@@ -71,10 +144,12 @@ export class GameLogic {
   }
 
   /**
-   * Calculate payout (winner takes double the bet)
+   * Calculate payout (deprecated - use GameEconomy.calculatePayout)
+   * @deprecated Use GameEconomy.calculatePayout for proper zero-sum economics
    */
   static calculatePayout(betAmount: number): number {
-    return betAmount * 2;
+    // Use new economy system for zero-sum gaming
+    return GameEconomy.calculatePayout(betAmount);
   }
 
   /**

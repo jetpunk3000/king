@@ -2,7 +2,6 @@ import { Telegraf, Context } from 'telegraf';
 import { message } from 'telegraf/filters';
 import { DatabaseManager } from './database/database';
 import { handleKingCommand, handleKingCallback } from './games/king';
-import { CallbackHandler } from './handlers/callbackHandler';
 import { AdminCommandHandler } from './handlers/adminCommands';
 import { PermissionUtils, ImageUtils } from './utils';
 import * as http from 'http';
@@ -45,7 +44,6 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 const db = new DatabaseManager('./data.json');
 
 // Initialize handlers
-const callbackHandler = new CallbackHandler(db);
 const adminCommandHandler = new AdminCommandHandler(db);
 
 /**
@@ -115,11 +113,13 @@ bot.help(async (ctx) => {
 \`/kingreset\` \\- Reset current king \\(admins only\\)
 /kingresetforce \\- Force reset without admin check \\(emergency\\)
 /kingstats \\- Show chat statistics
+/kingeconomy \\- View economy settings \\(admins only\\)
+/sethouseedge <percent> \\- Set house edge \\(admins only\\)
 
 \\*Game Rules:\\*
 1\\. BET \`/king 100\` \\(any amount\\) to claim throne
-2\\. DUMP to attack the King \\- 50/50 odds
-3\\. Winner doubles up
+2\\. DUMP to attack the King \\- winner takes loser's stake
+3\\. Fair zero\\-sum gaming \\(no money creation\\)
 4\\. CASHOUT anytime
 5\\. STREAK BONUS: \\+5% winrate per defense up to 70/30
 
@@ -166,6 +166,16 @@ bot.command('kingresetforce', async (ctx) => {
   await adminCommandHandler.handleKingResetForce(ctx);
 });
 
+bot.command('kingeconomy', async (ctx) => {
+  console.log(`💰 Economy info command triggered by user ${ctx.from?.id} (@${ctx.from?.username || ctx.from?.first_name || 'Unknown'})`);
+  await adminCommandHandler.handleKingEconomy(ctx);
+});
+
+bot.command('sethouseedge', async (ctx) => {
+  console.log(`⚙️ Set house edge command triggered by user ${ctx.from?.id} (@${ctx.from?.username || ctx.from?.first_name || 'Unknown'})`);
+  await adminCommandHandler.handleSetHouseEdge(ctx);
+});
+
 /**
  * Handle callback queries (inline buttons)
  */
@@ -176,8 +186,9 @@ bot.on('callback_query', async (ctx) => {
   if (callbackData === 'dump' || callbackData === 'cashout') {
     await handleKingCallback(ctx, callbackData, db);
   } else {
-    // Handle other callbacks (admin commands, etc.) with the old handler
-    await callbackHandler.handle(ctx);
+    // No other callbacks exist in the system
+    console.log(`Unknown callback: ${callbackData}`);
+    await ctx.answerCbQuery('❌ Unknown action');
   }
 });
 
