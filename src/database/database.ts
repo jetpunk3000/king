@@ -8,6 +8,7 @@ import { Database, ChatState, User, King, INITIAL_USER_BALANCE } from './types';
 export class DatabaseManager {
   private data: Database;
   private filePath: string;
+  private activeGames = new Map<string, string>(); // "chatId:gameName" -> userId
 
   constructor(filePath: string = './data.json') {
     this.filePath = filePath;
@@ -182,5 +183,26 @@ export class DatabaseManager {
     }
 
     return { totalChats, totalUsers };
+  }
+
+  /**
+   * Check if a game can be started in the chat
+   */
+  canStartGame(chatId: number, gameName: string): boolean {
+    return !this.activeGames.has(`${chatId}:${gameName}`);
+  }
+
+  /**
+   * Mark a game as started in the chat
+   */
+  markGameStarted(chatId: number, gameName: string, userId: number): void {
+    this.activeGames.set(`${chatId}:${gameName}`, userId.toString());
+  }
+
+  /**
+   * End a game in the chat
+   */
+  endGame(chatId: number, gameName: string): void {
+    this.activeGames.delete(`${chatId}:${gameName}`);
   }
 }

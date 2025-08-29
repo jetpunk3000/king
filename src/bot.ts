@@ -1,7 +1,7 @@
 import { Telegraf, Context } from 'telegraf';
 import { message } from 'telegraf/filters';
 import { DatabaseManager } from './database/database';
-import { KingCommandHandler } from './handlers/kingCommand';
+import { handleKingCommand, handleKingCallback } from './games/king';
 import { CallbackHandler } from './handlers/callbackHandler';
 import { AdminCommandHandler } from './handlers/adminCommands';
 import { PermissionUtils, ImageUtils } from './utils';
@@ -45,7 +45,6 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 const db = new DatabaseManager('./data.json');
 
 // Initialize handlers
-const kingCommandHandler = new KingCommandHandler(db);
 const callbackHandler = new CallbackHandler(db);
 const adminCommandHandler = new AdminCommandHandler(db);
 
@@ -137,7 +136,16 @@ Make sure the bot is an admin with these permissions\\!`;
  * King command handler
  */
 bot.command('king', async (ctx) => {
-  await kingCommandHandler.handle(ctx);
+  const commandText = (ctx.message as any)?.text || '';
+  const args = commandText.split(' ').slice(1);
+  const betAmount = args.length > 0 ? parseInt(args[0]) : null;
+
+  if (!betAmount) {
+    await ctx.reply('❌ Please specify a valid bet amount\nExample: `/king 100`');
+    return;
+  }
+
+  await handleKingCommand(ctx, betAmount, db);
 });
 
 /**
@@ -162,7 +170,15 @@ bot.command('kingresetforce', async (ctx) => {
  * Handle callback queries (inline buttons)
  */
 bot.on('callback_query', async (ctx) => {
-  await callbackHandler.handle(ctx);
+  const callbackData = (ctx.callbackQuery as any)?.data;
+
+  // Route KING callbacks to the new modular handler
+  if (callbackData === 'dump' || callbackData === 'cashout') {
+    await handleKingCallback(ctx, callbackData, db);
+  } else {
+    // Handle other callbacks (admin commands, etc.) with the old handler
+    await callbackHandler.handle(ctx);
+  }
 });
 
 /**
